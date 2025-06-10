@@ -1,16 +1,17 @@
 from abc import ABC
 import sys
 import os
-# Deal with import error
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))))
+# Deal with import error - 修改为项目根目录
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))))))
 import torch
 import numpy as np
 from typing_extensions import Literal
 import matplotlib.pyplot as plt
 from abc import ABC, abstractmethod
-from envs.JSBSim.envs import SingleCombatEnv
-from envs.JSBSim.utils.utils import get_root_dir
-from envs.JSBSim.model.baseline_actor import BaselineActor
+# 使用完整包路径
+from harl.envs.lag.JSBSim.envs import SingleCombatEnv
+from harl.envs.lag.JSBSim.utils.utils import get_root_dir
+from harl.envs.lag.JSBSim.model.baseline_actor import BaselineActor
 
 class BaselineAgent(ABC):
     def __init__(self, agent_id) -> None:

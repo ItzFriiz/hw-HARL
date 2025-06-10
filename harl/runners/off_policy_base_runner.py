@@ -721,6 +721,29 @@ class OffPolicyBaseRunner:
                 )
                 self.value_normalizer.load_state_dict(value_normalizer_state_dict)
 
+            # 恢复自适应alpha参数
+            if ("auto_alpha" in self.algo_args["algo"].keys() and
+                self.algo_args["algo"]["auto_alpha"]):
+                
+                # 恢复log_alpha参数
+                log_alpha_path = str(self.algo_args["train"]["model_dir"]) + "/log_alpha.pt"
+                if os.path.exists(log_alpha_path):
+                    log_alpha_dict = torch.load(log_alpha_path)
+                    for agent_id in range(self.num_agents):
+                        # 复制张量值而不是引用
+                        self.log_alpha[agent_id].data.copy_(log_alpha_dict[f"agent_{agent_id}"].data)
+                        # 更新alpha值
+                        self.alpha[agent_id] = torch.exp(self.log_alpha[agent_id].detach())
+                
+                # 恢复alpha优化器状态
+                optimizer_path = str(self.algo_args["train"]["model_dir"]) + "/alpha_optimizer.pt"
+                if os.path.exists(optimizer_path):
+                    alpha_optimizer_dict = torch.load(optimizer_path)
+                    for agent_id in range(self.num_agents):
+                        self.alpha_optimizer[agent_id].load_state_dict(
+                            alpha_optimizer_dict[f"agent_{agent_id}"]
+                        )
+
     def save(self):
         """Save the model"""
         for agent_id in range(self.num_agents):
@@ -731,6 +754,20 @@ class OffPolicyBaseRunner:
                 self.value_normalizer.state_dict(),
                 str(self.save_dir) + "/value_normalizer" + ".pt",
             )
+        # 保存自适应alpha参数
+        if ("auto_alpha" in self.algo_args["algo"].keys() and
+            self.algo_args["algo"]["auto_alpha"]):
+            # 保存log_alpha参数
+            log_alpha_dict = {}
+            for agent_id in range(self.num_agents):
+                log_alpha_dict[f"agent_{agent_id}"] = self.log_alpha[agent_id]
+            torch.save(log_alpha_dict, str(self.save_dir) + "/log_alpha.pt")
+            
+            # 保存alpha优化器状态
+            alpha_optimizer_dict = {}
+            for agent_id in range(self.num_agents):
+                alpha_optimizer_dict[f"agent_{agent_id}"] = self.alpha_optimizer[agent_id].state_dict()
+            torch.save(alpha_optimizer_dict, str(self.save_dir) + "/alpha_optimizer.pt")
 
     def close(self):
         """Close environment, writter, and log file."""
